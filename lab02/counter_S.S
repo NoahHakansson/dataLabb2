@@ -8,8 +8,9 @@ GPIO:		.quad 0
 interrupt:
 	movq counter, %rsi
 	movq GPIO, %rdi
-	incq %rdi # increment counter by one 0-15
+	incq %rsi # increment counter by one 0-15
 	andq $15, %rsi # do AND with 15, same as %16 (modulus 16)
+	movq %rsi, counter
 
 pin4:
 	# Use AND + right shift to get each leds on or off status
@@ -74,8 +75,8 @@ endIr:
 ledOn:
 	# %rcx contains GPIO_NR, %rdi contains GPIO
 	movq GPIO, %rdi
+	addq $3, %rdi # left side done
 	movq $0x3, %r9
-	addq $3, (%rdi) # left side done
 	shlq $4, %r9
 	addq $1, %r9 # left parenthesis done
 	subq $1, %rcx
@@ -84,11 +85,20 @@ ledOn:
 	shlq %cl, %r9 # shift left by %cl (%rcx subregister), whole right side is in %rsi
 	# right side is in %r9
 	orq %r9, (%rdi) # perform bitwose OR into (%rdi)
+ledOnEnd:
 	ret
 ledOff:
 	# %rcx contains GPIO_NR, %rdi contains GPIO
 	movq GPIO, %rdi
-	addq $3, (%rdi)
+	addq $3, %rdi # left side done
+	movq $0xCF, %r9
+	subq $1, %rcx
+	shlq $3, %rcx # shift left 3 times to multiply by 8, rcx contains right perenthesis
+	shlq %cl, %r9 # shift left by %cl (%rcx subregister), whole right side is in %rsi
+	notq %r9
+	# right side is in %r9
+	andq %r9, (%rdi) # perform bitwise AND into (%rdi)
+ledOffEnd:
 	ret
 
 setup:
